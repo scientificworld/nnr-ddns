@@ -1,0 +1,8 @@
+{
+	"token": "ff5cb950-b722-11eb-b7c5-79af3e4f97k7",
+	"protocol": 4,
+	"interface": "eth0",
+	"rules": [
+		"0e316278647a32b5f582146996ab0be5"
+	]
+}
