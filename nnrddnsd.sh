@@ -12,7 +12,7 @@ error() {
 }
 
 CONFIG="`[[ -n "$1" ]] && echo "$1" || echo "/etc/nnr-ddns.json"`"
-if [[ ! -f "$1" ]]
+if [[ ! -f "$CONFIG" ]]
 then
 	error "config file not found"
 fi
