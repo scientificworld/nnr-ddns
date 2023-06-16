@@ -4,5 +4,6 @@
 	"interface": "eth0",
 	"rules": [
 		"0e316278647a32b5f582146996ab0be5"
-	]
+	],
+	"cache": true
 }
