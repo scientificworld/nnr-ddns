@@ -53,7 +53,7 @@ do
 	do
 		if [[ "$CACHE" = "true" ]] && [[ -f "/var/nnr-ddns/$rule" ]]
 		then
-			remote="`cat "/var/nnr-ddns/$rule"`"
+			data="`cat "/var/nnr-ddns/$rule"`"
 			mode=" (cached)"
 		else
 			data="`curl https://nnr.moe/api/rules/get -s -H "Content-Type: application/json" -H "Token: $TOKEN" -X POST -d "{\\\"rid\\\": \\\"$rule\\\"}"`"
@@ -62,15 +62,13 @@ do
 				warning "unable to fetch rule $rule"
 				continue
 			fi
-			remote="`echo "$data" | jq -r .data.remote`"
 			mode=""
 		fi
-		if [[ "$remote" = "$ip" ]]
+		if [[ "`echo "$data" | jq -r .data.remote`" = "$ip" ]]
 		then
 			info "rule $rule is up to date$mode"
 		else
-			curl https://nnr.moe/api/rules/edit -s -o /dev/null -H "Content-Type: application/json" -H "Token: $TOKEN" -X POST -d "{\"rid\": \"$rule\", \"remote\": \"$ip\", \"rport\": \"`echo "$data" | jq -r .data.rport`\", \"name\": \"`echo "$data" | jq -r .data.name`\", \"setting\": `echo "$data" | jq -r .data.setting`}"
-			echo "$ip" >/var/nnr-ddns/$rule
+			curl https://nnr.moe/api/rules/edit -s -o "/var/nnr-ddns/$rule" -H "Content-Type: application/json" -H "Token: $TOKEN" -X POST -d "{\"rid\": \"$rule\", \"remote\": \"$ip\", \"rport\": \"`echo "$data" | jq -r .data.rport`\", \"name\": \"`echo "$data" | jq -r .data.name`\", \"setting\": `echo "$data" | jq -r .data.setting`}"
 			info "rule $rule is updated"
 		fi
 	done
