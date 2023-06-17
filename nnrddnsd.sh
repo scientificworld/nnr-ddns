@@ -63,6 +63,7 @@ do
 				continue
 			fi
 			remote="`echo "$data" | jq -r .data.remote`"
+			mode=""
 		fi
 		if [[ "$remote" = "$ip" ]]
 		then
