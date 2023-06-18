@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
 info() {
-	echo -e "`date +"%Y-%m-%d %H:%M:%S"` \033[90mINFO\033[0m $@"
+	echo -e "`date +"%Y-%m-%d %H:%M:%S"` \033[90mINFO\033[0m $@" | tee -a /var/log/nnr-ddns.txt
 }
 warning() {
-	echo -e "`date +"%Y-%m-%d %H:%M:%S"` \033[93mWARN\033[0m \033[30;43m$@\033[0m"
+	echo -e "`date +"%Y-%m-%d %H:%M:%S"` \033[93mWARN\033[0m \033[30;43m$@\033[0m" | tee -a /var/log/nnr-ddns.txt
 }
 error() {
-	echo -e "`date +"%Y-%m-%d %H:%M:%S"` \033[91mERR\033[0m \033[97;41m$@\033[0m"
+	echo -e "`date +"%Y-%m-%d %H:%M:%S"` \033[91mERR\033[0m \033[97;41m$@\033[0m" | tee -a /var/log/nnr-ddns.txt
 	exit 1
 }
 
@@ -32,6 +32,7 @@ PROTOCOL="`cat "$CONFIG" | jq -r .protocol`"
 INTERFACE="`cat "$CONFIG" | jq .interface`"
 RULES="`cat "$CONFIG" | jq -r ".rules[]"`"
 CACHE="`cat "$CONFIG" | jq -r .cache`"
+INTERVAL="`cat "$CONFIG" | jq -r .interval`"
 
 OPTION=""
 if [[ "$PROTOCOL" = "4" ]] || [[ "$PROTOCOL" = "6" ]]
@@ -42,6 +43,10 @@ if [[ "$INTERFACE" != "null" ]]
 then
 	OPTION="$OPTION --interface `echo "$INTERFACE" | jq -r`"
 fi
+if ! echo "$INTERVAL" | grep "^[[:digit:]]*$" >/dev/null
+then
+	INTERVAL=300
+fi
 
 mkdir -p /var/nnr-ddns
 
@@ -51,9 +56,10 @@ do
 	info "current ip: $ip"
 	for rule in $RULES
 	do
-		if [[ "$CACHE" = "true" ]] && [[ -f "/var/nnr-ddns/$rule" ]]
+		file="/var/nnr-ddns/$rule"
+		if [[ "$CACHE" = "true" ]] && [[ -f "$file" ]] && [[ -n "`cat "$file"`" ]]
 		then
-			data="`cat "/var/nnr-ddns/$rule"`"
+			data="`cat "$file"`"
 			mode=" (cached)"
 		else
 			data="`curl https://nnr.moe/api/rules/get -s -H "Content-Type: application/json" -H "Token: $TOKEN" -X POST -d "{\\\"rid\\\": \\\"$rule\\\"}"`"
@@ -62,15 +68,17 @@ do
 				warning "unable to fetch rule $rule"
 				continue
 			fi
+			echo "$data" > "$file"
 			mode=""
 		fi
 		if [[ "`echo "$data" | jq -r .data.remote`" = "$ip" ]]
 		then
 			info "rule $rule is up to date$mode"
 		else
-			curl https://nnr.moe/api/rules/edit -s -o "/var/nnr-ddns/$rule" -H "Content-Type: application/json" -H "Token: $TOKEN" -X POST -d "{\"rid\": \"$rule\", \"remote\": \"$ip\", \"rport\": \"`echo "$data" | jq -r .data.rport`\", \"name\": \"`echo "$data" | jq -r .data.name`\", \"setting\": `echo "$data" | jq -r .data.setting`}"
+			curl https://nnr.moe/api/rules/edit -s -o /dev/null -H "Content-Type: application/json" -H "Token: $TOKEN" -X POST -d "{\"rid\": \"$rule\", \"remote\": \"$ip\", \"rport\": \"`echo "$data" | jq -r .data.rport`\", \"name\": \"`echo "$data" | jq -r .data.name`\", \"setting\": `echo "$data" | jq -r .data.setting`}"
+			jq -c ".data.remote = \"$ip\"" "$file" > "$file"
 			info "rule $rule is updated"
 		fi
 	done
-	sleep 300
+	sleep $INTERVAL
 done
