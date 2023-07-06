@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
 info() {
-	echo -e "`date +"%Y-%m-%d %H:%M:%S"` \033[90mINFO\033[0m $@" | tee -a /var/log/nnr-ddns.txt
+	echo -e "`date +"%Y-%m-%d %H:%M:%S"` \033[90mINFO\033[0m $@" | tee -a "$LOG"
 }
 warning() {
-	echo -e "`date +"%Y-%m-%d %H:%M:%S"` \033[93mWARN\033[0m \033[30;43m$@\033[0m" | tee -a /var/log/nnr-ddns.txt
+	echo -e "`date +"%Y-%m-%d %H:%M:%S"` \033[93mWARN\033[0m \033[30;43m$@\033[0m" | tee -a "$LOG"
 }
 error() {
-	echo -e "`date +"%Y-%m-%d %H:%M:%S"` \033[91mERR\033[0m \033[97;41m$@\033[0m" | tee -a /var/log/nnr-ddns.txt
+	echo -e "`date +"%Y-%m-%d %H:%M:%S"` \033[91mERR\033[0m \033[97;41m$@\033[0m" | tee -a "$LOG"
 	exit 1
 }
 
@@ -33,6 +33,7 @@ INTERFACE="`cat "$CONFIG" | jq .interface`"
 RULES="`cat "$CONFIG" | jq -r ".rules[]"`"
 CACHE="`cat "$CONFIG" | jq -r .cache`"
 INTERVAL="`cat "$CONFIG" | jq -r .interval`"
+LOG="`cat "$CONFIG" | jq .log`"
 
 OPTION=""
 if [[ "$PROTOCOL" = "4" ]] || [[ "$PROTOCOL" = "6" ]]
@@ -46,6 +47,12 @@ fi
 if ! echo "$INTERVAL" | grep "^[[:digit:]]*$" >/dev/null
 then
 	INTERVAL=300
+fi
+if [[ "$LOG" != "null" ]]
+then
+	LOG="`echo "$LOG" | jq -r`"
+else
+	LOG="/var/log/nnr-ddns.txt"
 fi
 
 mkdir -p /var/nnr-ddns
@@ -80,5 +87,6 @@ do
 			info "rule $rule is updated"
 		fi
 	done
+	tail -n 1000 "$LOG" | tee "$LOG" >/dev/null
 	sleep $INTERVAL
 done

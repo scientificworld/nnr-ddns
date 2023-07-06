@@ -6,5 +6,6 @@
 		"0e316278647a32b5f582146996ab0be5"
 	],
 	"cache": true,
-	"interval": 60
+	"interval": 60,
+	"log": "/dev/null"
 }
