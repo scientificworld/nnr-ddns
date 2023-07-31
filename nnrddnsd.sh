@@ -87,6 +87,6 @@ do
 			info "rule $rule is updated"
 		fi
 	done
-	tail -n 1000 "$LOG" | tee "$LOG" >/dev/null
+	sed -i -e :a -e "\$q;N;1000,\$D;ba" "$LOG"
 	sleep $INTERVAL
 done
