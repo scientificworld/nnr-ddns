@@ -60,6 +60,12 @@ mkdir -p /var/nnr-ddns
 while true
 do
 	ip="`curl ip.sb -s $OPTION`"
+	if [[ "$?" != "0" ]]
+	then
+		warning "unable to get current ip"
+		sleep $INTERVAL
+		continue
+	fi
 	info "current ip: $ip"
 	for rule in $RULES
 	do
